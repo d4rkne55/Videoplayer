@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Mein Videoplayer | PrivateProjects</title>
+<meta charset="UTF-8">
+<meta name="author" content="Dennis Jungbauer">
+<meta name="webdesigner" content="Dennis Jungbauer">
+<meta name="Editor" content="Notepad++">
+<link rel="shortcut icon" type="image/x-icon" href="../../img/video.ico">
+<link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css">
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<style>
+	@import url(http://fonts.googleapis.com/css?family=Open+Sans);
+
+	body {
+		width: 100%;
+		height: 100%;
+		margin: 0;
+		padding: 0;
+		background: #242424;
+		background: -moz-linear-gradient(left, #0C0D0D 0%, #333 50%, #0C0D0D 100%);
+		background: -webkit-linear-gradient(left, #0C0D0D 0%, #333 50%, #0C0D0D 100%);
+		background: -ms-linear-gradient(left, #0C0D0D 0%, #333 50%, #0C0D0D 100%);
+		background: linear-gradient(to right, #0C0D0D 0%, #333 50%, #0C0D0D 100%);
+		-khtml-user-select: none;
+		-moz-user-select:none;
+		-webkit-user-select: none;
+		-ms-user-select: none;
+	}
+	#hintergrund {
+		display: none;
+		width: 100%;
+		height: auto;
+		position: relative;
+		z-index: 1;
+		border: none;
+	}
+	#content {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 2;
+	}
+	a { color: dodgerblue; text-decoration: none; }
+	a:hover { color: royalblue; }
+	div#video-box {
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		margin-left: -320px;  /* hälfte vom div */
+		margin-top: -230px;  /* hälfte vom div (video + padding) und 34px weniger */
+		background: black;
+		border: 4px solid black;
+		border-width: 1em 4px;
+		box-shadow: 0px 1px 10px 2px #666;
+		-webkit-box-shadow: 0px 1px 14px 2px #666;
+	}
+	#video-title {
+		position: absolute;
+		z-index: 2;
+		top: 0;
+		left: 0;
+		right: 0;
+		padding: 3px 8px;
+		background: rgba(18,18,18,0.77);
+		font-family: 'Open Sans', sans-serif;
+		color: #d0d0d0;
+		/*transition: opacity 0.2s;*/
+	}
+	#playArea {
+		position: absolute;
+		z-index: 1;
+		width: 100%;
+		top: 0;
+		left: 0;
+		bottom: 44px;
+	}
+	#video-controls {
+		position: absolute;
+		z-index: 3;
+		height: 24px;
+		bottom: 5px;
+		left: 0;
+		right: 0;
+		padding: 7px 13px;
+		overflow: hidden;
+		background: rgba(12,12,12,0.88);
+		box-shadow: 0 -2px 8px -1px rgba(12,12,12,0.9);
+		cursor: default;
+	}
+	#video-controls * { vertical-align: middle; }
+	#video-controls .fa { font-size: 24px; line-height: 24px; color: #E0E0E0; transition: all 180ms ease-out; cursor: pointer; }
+	#video-controls .fa:hover { color: white; text-shadow: 0 0 6px rgba(240,242,244,0.77); }
+	#video-controls span { font: 12px 'Open Sans'; color: #CCC; }
+	#video-controls #play { font-size: 22px; width: 19px; }
+	#video-controls #volume-down { width: 14px; }
+	#video-controls #fullscreen { font-size: 22px; }
+	input[type="range"] {
+		-webkit-appearance: none;
+		appearance: none;
+		height: 7px;
+		margin: 4px;
+		background-color: #C3C2C5;
+		border-radius: 3px;
+		outline: none;
+	}
+	input[type="range"]::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 14px;
+		height: 14px;
+		background-color: #EEE;
+		border-radius: 50%;
+		box-shadow: 0 0 4px 1px rgba(0,0,0,0.3);
+	}
+	#currentT { margin-left: 6px; }
+	#timeline { margin: 8px 3px 8px 2px; width: 40%; }
+	#duration { margin-right: 12px; }
+	#volume { margin: 8px 4px; width: 21.5%; }
+	#fullscreen { margin-left: 10px; height: 21px; }
+	#hdvideo { font: italic 11px 'Arial Black' !important; border: 2px solid #E0E0E0; padding: 0 6px 0 5px; border-radius: 4px; }
+	#hdvideo:hover { border-color: white; box-shadow: 0 0 6px rgba(236,238,240,0.6), inset 0 0 5px rgba(238,240,242,0.7); }
+	#hdvideo.active { color: deepskyblue !important; }
+	video { border-bottom: thin solid #222; opacity: 0.9; transition: opacity 160ms ease-in-out; -webkit-transition: opacity 160ms ease-in-out; }
+	p.info { font: 16px Georgia; color: #AAA; letter-spacing: 0.7px; line-height: 1.4em; padding: 4px 1em; text-shadow: 3px -3px 6px #999; }
+
+	@media (min-height: 500px) {
+		body { overflow-y: hidden; }
+	}
+</style>
+<script src="../../date.js"></script>
+<script>
+$(document).ready(function() {
+	video = $('video').eq(0);
+	$(video).get(0).controls = false;
+	if($('#video-title').html().length > 59) {
+		$('#video-title').html( $('#video-title').html().substr(0,57) +"..." );
+	}
+	/*$('#quality span').each(function() {
+		$(this).click(function() {
+			changeQuality( $(this).html() );
+		});
+	});*/
+	$('#hintergrund').load(function() {
+		$(this).fadeIn(600);
+	});
+});
+	function hoverEffect() {
+		$('#video-player').hover(function() {
+			//$(video).css("opacity", "1");
+			$('#video-controls').stop().slideDown(120);
+			//$('#video-title').fadeIn(100);
+		}, function() {
+			if (! $(video).get(0).ended) {
+				$('#video-controls').delay(500).slideUp(400);
+				//$('#video-title').fadeOut(220);
+			}
+		});
+	}
+	function playVideo() {
+		//var dur = ($(video).get(0).duration / 60) -0.01;
+		//$('#duration').html( dur.toFixed(2).replace('.', ':') );
+		setTimeout(function() {
+			if ($(video).get(0).readyState==0) {
+				var url = prompt("The video is not reachable.\nTo load another video paste the URL here:", "http://www.quirksmode.org/html5/videos/big_buck_bunny.webm");
+				if(url != null) {
+					$(video).attr("src", url);
+					setTimeout('playVideo()', 500);
+				}
+				return false;
+			}
+		}, 600);
+		setVolume();
+		hoverEffect();
+		$('#timeline').change(function() {
+			$(video).get(0).currentTime = ($('#timeline').val()*60) /100;
+		});
+		if ($(video).get(0).paused) {
+			showTimes();
+			initTimeline();
+			replayVideo();
+			$(video).get(0).play();
+			$('#play').removeClass("fa-play").addClass("fa-pause");
+			//$('#video-controls').stop().delay(500).slideUp(400);
+			$('#video-title').delay(300).fadeOut(300);
+			$(video).css("opacity", "1");
+		}
+		else {
+			$(video).get(0).pause();
+			clearInterval(timeline);
+			clearInterval(times);
+			clearInterval(replay);
+			$('#play').removeClass("fa-pause").addClass("fa-play");
+			$('#video-title').fadeIn(120);
+		}
+		return false;
+	}
+	$(document).keyup(function(event) {
+		if(event.keyCode==32) { event.preventDefault(); playVideo(); } //bei Leertaste
+	});
+	function showTimes() {
+		dur = $(video).get(0).duration;
+		var timeString = new Date(dur * 1000).toString('m:ss').replace('NaN:NaN', '0:00');
+		$('#duration').html(timeString);
+		times = setInterval(function() {
+			pos = $(video).get(0).currentTime;
+			var timeString = new Date(pos * 1000).toString('m:ss');
+			$('#currentT').html(timeString);
+		}, 500);
+	}
+	function initTimeline() {
+		timeline = setInterval(function() {
+			var value = pos * (100 / dur);
+			$('#timeline').val(value);
+		}, 250);
+	}
+	function replayVideo() {
+		replay = setInterval(function() {
+			if ($(video)[0].ended) {
+				$('#video-controls').slideDown(120);
+				$('#play').removeClass("fa-pause").addClass("fa-repeat");
+				$('#video-title').fadeIn(120);
+				$(video).currentTime = 0;
+			}
+		}, 400);
+	}
+	function setVolume(vol) {
+		vol = vol || $('#volume').val();
+		$(video).get(0).volume = vol;
+		$('#volume').val(vol);
+	}
+	function muteVideo() {
+		$(video).prop('muted', !$(video).prop('muted'));
+		if($(video).prop('muted')) {
+			$('#volume-down').removeClass("fa-volume-down").addClass("fa-volume-off");
+			$('#volume').val(0);
+		}
+		else {
+			$('#volume-down').removeClass("fa-volume-off").addClass("fa-volume-down");
+			$('#volume').val( $(video).get(0).volume );
+		}
+	}
+	videoIsFullScreen = false;
+	function showFullscreen() {
+		/*if ($(video).get(0).requestFullscreen) {
+			$(video).get(0).requestFullscreen();
+		} else if ($(video).get(0).mozRequestFullScreen) {
+			$(video).get(0).mozRequestFullScreen();
+		} else if ($(video).get(0).webkitRequestFullscreen) {
+			$(video).get(0).webkitRequestFullscreen();
+		}
+		if(!document.webkitIsFullScreen) {
+			//$(document).click(function() {
+			//	playVideo();
+			//});
+			setTimeout("alert('You can press Spacebar to play/pause video')", 500);
+			$()
+		}*/
+
+		if(!videoIsFullScreen) {
+			$(video).height("100%").width("100%").css({ "position":"fixed", "left":"0", "top":"0", "boxShadow":"inset 0 -5px 45px 5px black" });
+			$('#video-controls')/*.width( $(video).width() )*/.css({ "position":"fixed", "margin":"auto", "textAlign":"center", "bottom":"9px" });
+			$('#video-title').css({ "position":"fixed", "textAlign":"center", "padding":"6px 10px" });
+			$('#playArea').css({ "position":"fixed", "bottom":"27px" });
+
+			videoIsFullScreen = true;
+		}
+		else {
+			$(video).width(640).height(360);
+			$(video).css({ "position":"static", "boxShadow":"none" });
+			$('#video-controls').css({ "position":"absolute", "width":"auto", "textAlign":"left", "margin":"0", "bottom":"5px" });
+			$('#video-title').css({ "position":"absolute", "textAlign":"left", "padding":"3px 8px" });
+			$('#playArea').css({ "position":"absolute", "bottom":"42px" });
+
+			videoIsFullScreen = false;
+		}
+	}
+	function toggleHD() {
+		position = $(video)[0].currentTime;
+		var wasPlaying = !$(video)[0].paused;
+		var sd = "http://r4---sn-5hn7zn7y.googlevideo.com/videoplayback?id=5d218157378151b9&expire=1393702347&sver=3&ipbits=0&mt=1393680223&ms=au&source=youtube&sparams=id%2Cip%2Cipbits%2Citag%2Cratebypass%2Csource%2Cupn%2Cexpire&mv=m&ratebypass=yes&itag=18&ip=91.0.225.167&key=yt5&upn=1gaMgz_aURw&signature=8E8027CF8DFB460FDA182059CF2ECFC3B0E9F3CD.F7A16219247CD55A1AA3AD9766E46689BF80F83D&fexp=931322%2C945000%2C914042%2C916626%2C900224%2C937417%2C937416%2C913434%2C936910%2C936913%2C902907";
+		var hd = "http://r4---sn-5hn7zn7y.googlevideo.com/videoplayback?id=5d218157378151b9&expire=1393702347&sver=3&ipbits=0&mt=1393680223&ms=au&source=youtube&sparams=id%2Cip%2Cipbits%2Citag%2Cratebypass%2Csource%2Cupn%2Cexpire&mv=m&ratebypass=yes&itag=22&ip=91.0.225.167&key=yt5&upn=1gaMgz_aURw&signature=5B2A73C611419B4670407264044511130E3C37E1.29A6B2AB4F0029F716FCEF0C5E5E324B57992555&fexp=931322%2C945000%2C914042%2C916626%2C900224%2C937417%2C937416%2C913434%2C936910%2C936913%2C902907";
+		if(video.attr("src") != hd) {
+			video.attr("src", hd);
+			$('#hdvideo').addClass("active");
+		}
+		else {
+			video.attr("src", sd);
+			$('#hdvideo').removeClass("active");
+		}
+		setTimeout(function() {
+			$(video)[0].currentTime = position;
+			if(wasPlaying) setTimeout('playVideo();', 400);
+		}, 200);
+	}
+</script>
+</head>
+<body>
+<img id="hintergrund" src="../../img/theater-ambient.jpg" alt="Hintergrundbild">
+<div id="content">
+	<div id="video-box">
+		<div id="video-player">
+			<div id="video-title">Big Buck Bunny - A Testvideo</div>
+			<div id="playArea" onclick="playVideo()">&nbsp;</div>
+			<div id="video-controls">
+				<i id="play" class="fa fa-play fa-fw" onclick="playVideo()"></i>
+				<span id="currentT">0:00</span>
+				<input id="timeline" type="range" value="0" step="0.1">
+				<span id="duration">0:00</span>
+				<i id="volume-down" class="fa fa-volume-down" onclick="muteVideo()"></i>
+				<input id="volume" type="range" value="0.5" min="0" max="1" step="0.01" onclick="setVolume()" onchange="setVolume()">
+				<i class="fa fa-volume-up" onclick="setVolume(1)"></i>
+				<i id="fullscreen" class="fa fa-external-link" onclick="showFullscreen()"></i>&nbsp;
+				<i id="hdvideo" class="fa" onclick="toggleHD()">HD</i>
+			</div>
+			<video id="video" src="http://www.quirksmode.org/html5/videos/big_buck_bunny.webm" width="640" height="360" controls>
+				<p class="info">Ups! Dein Browser scheint kein HTML5 zu unterst&uuml;tzen.<br>Du solltest deinen Browser ein Update g&ouml;nnen ;)</p>
+				<p class="info">Jedoch kannst du dir auch jetzt schon das Video <a href="https://www.youtube.com/watch?v=XSGBVzeBUbk">&thinsp;auf
+					YouTube&thinsp;<i class="fa fa-youtube-play" style="text-shadow: none"></i>&thinsp;</a> anschauen&thinsp;...</p>
+			</video>
+		</div>
+		<!-- <p id="quality"><b>Full version</b> <span title="Standard">360p</span><span>720p</span></p> -->
+	</div>
+</div>
+</body>
+</html>
