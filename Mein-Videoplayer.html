@@ -31,7 +31,7 @@
 		display: none;
 		width: 100%;
 		height: auto;
-		position: relative;
+		position: fixed;
 		z-index: 1;
 		border: none;
 	}
@@ -55,7 +55,23 @@
 		border: 4px solid black;
 		border-width: 1em 4px;
 		box-shadow: 0px 1px 10px 2px #666;
-		-webkit-box-shadow: 0px 1px 14px 2px #666;
+        overflow: hidden;
+	}
+	#video-player video {
+        display: block;  /* fix for this little padding on the parent div */
+        width: 640px;
+        height: 360px;
+		border-bottom: thin solid #111;
+		opacity: 0.88;
+		transition: opacity 160ms ease-in-out;
+	}
+	#video-player.fullscreen video {
+		position: fixed;
+		height: 100%;
+		width: 100%;
+		left: 0;
+		top: 0;
+		box-shadow: inset 0 -5px 45px 5px black;
 	}
 	#video-title {
 		position: absolute;
@@ -69,34 +85,46 @@
 		color: #d0d0d0;
 		/*transition: opacity 0.2s;*/
 	}
+	.fullscreen #video-title {
+        position: fixed;
+        padding: 8px 10px;
+        text-align: center;
+    }
 	#playArea {
 		position: absolute;
 		z-index: 1;
 		width: 100%;
 		top: 0;
 		left: 0;
-		bottom: 44px;
+		bottom: 0;
 	}
+	.fullscreen #playArea { position: fixed; }
 	#video-controls {
 		position: absolute;
 		z-index: 3;
 		height: 24px;
-		bottom: 5px;
+		bottom: 0;
 		left: 0;
 		right: 0;
 		padding: 7px 13px;
 		overflow: hidden;
 		background: rgba(12,12,12,0.88);
-		box-shadow: 0 -2px 8px -1px rgba(12,12,12,0.9);
+		box-shadow: 0 -2px 8px -1px rgba(12,12,12,0.88);
 		cursor: default;
 	}
+	.fullscreen #video-controls { position: fixed; margin: auto; text-align: center; }
+    .fullscreen #playArea, .fullscreen #video-controls { bottom: 12px; }
 	#video-controls * { vertical-align: middle; }
-	#video-controls .fa { font-size: 24px; line-height: 24px; color: #E0E0E0; transition: all 180ms ease-out; cursor: pointer; }
-	#video-controls .fa:hover { color: white; text-shadow: 0 0 6px rgba(240,242,244,0.77); }
+	#video-controls .fa {
+		font-size: 24px;
+		line-height: 24px;
+		color: #E0E0E0;
+		transition: all 180ms ease-out;
+	}
+    #video-controls .fa.disabled { color: rgb(76, 75, 80); }
+    #video-controls .fa:not(.disabled) { cursor: pointer; }
+	#video-controls .fa:not(.disabled):hover { color: white; text-shadow: 0 0 6px rgba(240,242,244,0.77); }
 	#video-controls span { font: 12px 'Open Sans'; color: #CCC; }
-	#video-controls #play { font-size: 22px; width: 19px; }
-	#video-controls #volume-down { width: 14px; }
-	#video-controls #fullscreen { font-size: 22px; }
 	input[type="range"] {
 		-webkit-appearance: none;
 		appearance: none;
@@ -115,15 +143,27 @@
 		border-radius: 50%;
 		box-shadow: 0 0 4px 1px rgba(0,0,0,0.3);
 	}
+	
+	#video-controls #play { font-size: 22px; width: 19px; }
 	#currentT { margin-left: 6px; }
 	#timeline { margin: 8px 3px 8px 2px; width: 40%; }
 	#duration { margin-right: 12px; }
-	#volume { margin: 8px 4px; width: 21.5%; }
-	#fullscreen { margin-left: 10px; height: 21px; }
-	#hdvideo { font: italic 11px 'Arial Black' !important; border: 2px solid #E0E0E0; padding: 0 6px 0 5px; border-radius: 4px; }
-	#hdvideo:hover { border-color: white; box-shadow: 0 0 6px rgba(236,238,240,0.6), inset 0 0 5px rgba(238,240,242,0.7); }
-	#hdvideo.active { color: deepskyblue !important; }
-	video { border-bottom: thin solid #222; opacity: 0.9; transition: opacity 160ms ease-in-out; -webkit-transition: opacity 160ms ease-in-out; }
+	#video-controls #volume-down { width: 14px; }
+	input#volume { margin: 8px 4px; width: 21.5%; }
+	#video-controls #fullscreen { margin-left: 10px; height: 21px; font-size: 22px; }
+	#video-controls #hdtoggle {
+		font: italic 11px 'Arial Black' !important;
+		border: 2px solid #E0E0E0;
+		padding: 0 6px 0 5px;
+		border-radius: 4px;
+	}
+    #video-controls #hdtoggle.disabled { border-color: rgb(91, 90, 95); }
+	#video-controls #hdtoggle:not(.disabled):hover {
+		border-color: white;
+		box-shadow: 0 0 6px rgba(236,238,240,0.6), inset 0 0 5px rgba(238,240,242,0.7);
+	}
+	#video-controls #hdtoggle.active { color: deepskyblue; }
+	
 	p.info { font: 16px Georgia; color: #AAA; letter-spacing: 0.7px; line-height: 1.4em; padding: 4px 1em; text-shadow: 3px -3px 6px #999; }
 
 	@media (min-height: 500px) {
@@ -132,169 +172,295 @@
 </style>
 <script src="../../date.js"></script>
 <script>
-$(document).ready(function() {
-	video = $('video').eq(0);
-	$(video).get(0).controls = false;
-	if($('#video-title').html().length > 59) {
-		$('#video-title').html( $('#video-title').html().substr(0,57) +"..." );
-	}
-	/*$('#quality span').each(function() {
-		$(this).click(function() {
-			changeQuality( $(this).html() );
-		});
-	});*/
-	$('#hintergrund').load(function() {
-		$(this).fadeIn(600);
-	});
-});
-	function hoverEffect() {
-		$('#video-player').hover(function() {
-			//$(video).css("opacity", "1");
-			$('#video-controls').stop().slideDown(120);
-			//$('#video-title').fadeIn(100);
-		}, function() {
-			if (! $(video).get(0).ended) {
-				$('#video-controls').delay(500).slideUp(400);
-				//$('#video-title').fadeOut(220);
-			}
-		});
-	}
-	function playVideo() {
-		//var dur = ($(video).get(0).duration / 60) -0.01;
-		//$('#duration').html( dur.toFixed(2).replace('.', ':') );
-		setTimeout(function() {
-			if ($(video).get(0).readyState==0) {
-				var url = prompt("The video is not reachable.\nTo load another video paste the URL here:", "http://www.quirksmode.org/html5/videos/big_buck_bunny.webm");
-				if(url != null) {
-					$(video).attr("src", url);
-					setTimeout('playVideo()', 500);
-				}
-				return false;
-			}
-		}, 600);
-		setVolume();
-		hoverEffect();
-		$('#timeline').change(function() {
-			$(video).get(0).currentTime = ($('#timeline').val()*60) /100;
-		});
-		if ($(video).get(0).paused) {
-			showTimes();
-			initTimeline();
-			replayVideo();
-			$(video).get(0).play();
-			$('#play').removeClass("fa-play").addClass("fa-pause");
-			//$('#video-controls').stop().delay(500).slideUp(400);
-			$('#video-title').delay(300).fadeOut(300);
-			$(video).css("opacity", "1");
-		}
-		else {
-			$(video).get(0).pause();
-			clearInterval(timeline);
-			clearInterval(times);
-			clearInterval(replay);
-			$('#play').removeClass("fa-pause").addClass("fa-play");
-			$('#video-title').fadeIn(120);
-		}
-		return false;
-	}
-	$(document).keyup(function(event) {
-		if(event.keyCode==32) { event.preventDefault(); playVideo(); } //bei Leertaste
-	});
-	function showTimes() {
-		dur = $(video).get(0).duration;
-		var timeString = new Date(dur * 1000).toString('m:ss').replace('NaN:NaN', '0:00');
-		$('#duration').html(timeString);
-		times = setInterval(function() {
-			pos = $(video).get(0).currentTime;
-			var timeString = new Date(pos * 1000).toString('m:ss');
-			$('#currentT').html(timeString);
-		}, 500);
-	}
-	function initTimeline() {
-		timeline = setInterval(function() {
-			var value = pos * (100 / dur);
-			$('#timeline').val(value);
-		}, 250);
-	}
-	function replayVideo() {
-		replay = setInterval(function() {
-			if ($(video)[0].ended) {
-				$('#video-controls').slideDown(120);
-				$('#play').removeClass("fa-pause").addClass("fa-repeat");
-				$('#video-title').fadeIn(120);
-				$(video).currentTime = 0;
-			}
-		}, 400);
-	}
-	function setVolume(vol) {
-		vol = vol || $('#volume').val();
-		$(video).get(0).volume = vol;
-		$('#volume').val(vol);
-	}
-	function muteVideo() {
-		$(video).prop('muted', !$(video).prop('muted'));
-		if($(video).prop('muted')) {
-			$('#volume-down').removeClass("fa-volume-down").addClass("fa-volume-off");
-			$('#volume').val(0);
-		}
-		else {
-			$('#volume-down').removeClass("fa-volume-off").addClass("fa-volume-down");
-			$('#volume').val( $(video).get(0).volume );
-		}
-	}
-	videoIsFullScreen = false;
-	function showFullscreen() {
-		/*if ($(video).get(0).requestFullscreen) {
-			$(video).get(0).requestFullscreen();
-		} else if ($(video).get(0).mozRequestFullScreen) {
-			$(video).get(0).mozRequestFullScreen();
-		} else if ($(video).get(0).webkitRequestFullscreen) {
-			$(video).get(0).webkitRequestFullscreen();
-		}
-		if(!document.webkitIsFullScreen) {
-			//$(document).click(function() {
-			//	playVideo();
-			//});
-			setTimeout("alert('You can press Spacebar to play/pause video')", 500);
-			$()
-		}*/
+    // jQuery plugin to bind both single and double click to objects
+    // parameter 'delegateSelector' is optional and allow to delegate the events
+    // parameter 'dblclickWait' is optional, default is 300
+    (function($) {
+        $.fn.multipleClicks = function(delegateSelector, clickFun, dblclickFun, dblclickWait) {
+            var obj;
+            if (typeof(delegateSelector)==='function' && typeof(clickFun)==='function') {
+                dblclickWait = dblclickFun; dblclickFun = clickFun; clickFun = delegateSelector; delegateSelector = null; // If 'delegateSelector' is missing reorder arguments
+            } else if (!(typeof(delegateSelector)==='string' && typeof(clickFun)==='function' && typeof(dblclickFun)==='function')) {
+                return false;
+            }
+            return $(this).each(function() {
+                $(this).on('click', delegateSelector, function(event) {
+                    var self = this;
+                    clicks = ($(self).data('clicks') || 0)+1;
+                    $(self).data('clicks', clicks);
+                    if (clicks == 1) {
+                        setTimeout(function(){
+                            if ($(self).data('clicks') == 1) {
+                                clickFun.call(self, event); // Single click action
+                            } else {
+                                dblclickFun.call(self, event); // Double click action
+                            }
+                            $(self).data('clicks', 0);
+                        }, dblclickWait || 300);
+                    }
+                });
+            });
+        };
+    })(jQuery);
+</script>
+<script>
+    function titleCase(str) {
+        return (str + '').replace(/^([a-z])|\s+([a-z])/g, function ($1) {
+            return $1.toUpperCase();
+        });
+    }
+    var cursorTimer;
+    function cursorShowTimeout(time) {
+        if(video.get(0).played.length!=0 && !video.get(0).ended) {
+            clearInterval(cursorTimer);
+            if($('#playArea').css("cursor")) $('#playArea').css("cursor", "");
 
-		if(!videoIsFullScreen) {
-			$(video).height("100%").width("100%").css({ "position":"fixed", "left":"0", "top":"0", "boxShadow":"inset 0 -5px 45px 5px black" });
-			$('#video-controls')/*.width( $(video).width() )*/.css({ "position":"fixed", "margin":"auto", "textAlign":"center", "bottom":"9px" });
-			$('#video-title').css({ "position":"fixed", "textAlign":"center", "padding":"6px 10px" });
-			$('#playArea').css({ "position":"fixed", "bottom":"27px" });
+            cursorTimer = setTimeout(function() {
+                $('#playArea').css("cursor", "none");
+            }, time);
+        }
+    }
+    function hoverEffect() {
+        $('#video-player').hover(function() {
+            //$(video).css("opacity", "1");
+            var bottom = $('#video-player').hasClass("fullscreen") ? 12 : 0;
+            $('#video-controls').stop(true).animate({bottom: bottom}, 120);
+            //$('#video-title').fadeIn(100);
+        }, function() {
+            if (! video.get(0).ended) {
+                $('#video-controls').stop(true, true).delay(550).animate({bottom: -$('#video-controls').outerHeight() -5}, 750);
+                //$('#video-title').fadeOut(220);
+            }
+        });
+    }
+    function showTimes() {
+        dur = video.get(0).duration;
+        var timeString = new Date(dur * 1000).toString('m:ss').replace('NaN:NaN', '0:00');
+        $('#duration').html(timeString);
+        times = setInterval(function() {
+            pos = video.get(0).currentTime;
+            var timeString = new Date(pos * 1000).toString('m:ss');
+            $('#currentT').html(timeString);
+        }, 500);
+    }
+    function initTimeline() {
+        timeline = setInterval(function() {
+            pos = video.get(0).currentTime;
+            var value = pos * (100 / dur);
+            $('#timeline').val(value);
+        }, 250);
+    }
+    function replayVideo() {
+        replay = setInterval(function() {
+            if (video[0].ended) {
+                if($('#playArea').css("cursor")) $('#playArea').css("cursor", "");
+                var bottom = $('#video-player').hasClass("fullscreen") ? 12 : 0;
+                $('#video-controls').stop(true).animate({bottom: bottom}, 120);
+                $('#play').removeClass("fa-pause").addClass("fa-repeat");
+                $('#video-title').fadeIn(120);
+                video.currentTime = 0;
+            }
+        }, 400);
+    }
+    function setVolume(vol) {
+        vol = vol || $('#volume').val();
+        video.get(0).volume = vol;
+        $('#volume').val(vol);
+    }
+    function playVideo() {
+        setTimeout(function() {
+            if (video.get(0).readyState==0 && !video.seeking) {
+                var url = prompt("The video is not reachable.\nTo load another video paste the URL here:", video.attr("src"));
+                if(url != null) {
+                    video.attr("src", url);
+                    setTimeout('playVideo()', 500);
+                }
+                return false;
+            }
+        }, 1250);
+        setVolume();
+        hoverEffect();
 
-			videoIsFullScreen = true;
-		}
-		else {
-			$(video).width(640).height(360);
-			$(video).css({ "position":"static", "boxShadow":"none" });
-			$('#video-controls').css({ "position":"absolute", "width":"auto", "textAlign":"left", "margin":"0", "bottom":"5px" });
-			$('#video-title').css({ "position":"absolute", "textAlign":"left", "padding":"3px 8px" });
-			$('#playArea').css({ "position":"absolute", "bottom":"42px" });
+        if (video.get(0).paused) {
+            showTimes();
+            initTimeline();
+            replayVideo();
+            video.get(0).play();
+            $('#play').removeClass("fa-play").addClass("fa-pause");
+            //$('#video-controls').stop().delay(500).slideUp(400);
+            $('#video-title').delay(300).fadeOut(300);
+            video.css("opacity", "1");
 
-			videoIsFullScreen = false;
-		}
-	}
-	function toggleHD() {
-		position = $(video)[0].currentTime;
-		var wasPlaying = !$(video)[0].paused;
-		var sd = "http://r4---sn-5hn7zn7y.googlevideo.com/videoplayback?id=5d218157378151b9&expire=1393702347&sver=3&ipbits=0&mt=1393680223&ms=au&source=youtube&sparams=id%2Cip%2Cipbits%2Citag%2Cratebypass%2Csource%2Cupn%2Cexpire&mv=m&ratebypass=yes&itag=18&ip=91.0.225.167&key=yt5&upn=1gaMgz_aURw&signature=8E8027CF8DFB460FDA182059CF2ECFC3B0E9F3CD.F7A16219247CD55A1AA3AD9766E46689BF80F83D&fexp=931322%2C945000%2C914042%2C916626%2C900224%2C937417%2C937416%2C913434%2C936910%2C936913%2C902907";
-		var hd = "http://r4---sn-5hn7zn7y.googlevideo.com/videoplayback?id=5d218157378151b9&expire=1393702347&sver=3&ipbits=0&mt=1393680223&ms=au&source=youtube&sparams=id%2Cip%2Cipbits%2Citag%2Cratebypass%2Csource%2Cupn%2Cexpire&mv=m&ratebypass=yes&itag=22&ip=91.0.225.167&key=yt5&upn=1gaMgz_aURw&signature=5B2A73C611419B4670407264044511130E3C37E1.29A6B2AB4F0029F716FCEF0C5E5E324B57992555&fexp=931322%2C945000%2C914042%2C916626%2C900224%2C937417%2C937416%2C913434%2C936910%2C936913%2C902907";
-		if(video.attr("src") != hd) {
-			video.attr("src", hd);
-			$('#hdvideo').addClass("active");
-		}
-		else {
-			video.attr("src", sd);
-			$('#hdvideo').removeClass("active");
-		}
-		setTimeout(function() {
-			$(video)[0].currentTime = position;
-			if(wasPlaying) setTimeout('playVideo();', 400);
-		}, 200);
-	}
+            if($('#playArea').css("cursor")!="none") setTimeout(function() {
+                $('#playArea').css("cursor", "none");
+            }, 1500);
+        }
+        else {
+            video.get(0).pause();
+            clearInterval(timeline);
+            clearInterval(times);
+            clearInterval(replay);
+            $('#play').removeClass("fa-pause").addClass("fa-play");
+            $('#video-title').fadeIn(120);
+        }
+        return false;
+    }
+    function muteVideo() {
+        video.prop('muted', !video.prop('muted'));
+        if(video.prop('muted')) {
+            $('#volume-down').removeClass("fa-volume-down").addClass("fa-volume-off");
+            $('#volume').val(0);
+        }
+        else {
+            $('#volume-down').removeClass("fa-volume-off").addClass("fa-volume-down");
+            $('#volume').val( video.get(0).volume );
+        }
+    }
+    function showFullscreen(requestFS) {
+        requestFS = (typeof requestFS !== "undefined") ? requestFS : true;
+        var vPlayer = $('#video-player');
+        $('#video-controls').removeAttr("style");
+        if(!vPlayer.hasClass("fullscreen") || (requestFS && !isFS)) {
+            vPlayer.addClass("fullscreen");
+            $('#video-box').css("position", "initial");
+            if(typeof title!=="undefined") $('#video-title').text(title);
+
+            if(requestFS) {
+                if (vPlayer.get(0).requestFullscreen) {
+                    vPlayer.get(0).requestFullscreen();
+                } else if (vPlayer.get(0).msRequestFullscreen) {
+                    vPlayer.get(0).msRequestFullscreen();
+                } else if (vPlayer.get(0).mozRequestFullScreen) {
+                    vPlayer.get(0).mozRequestFullScreen();
+                } else if (vPlayer.get(0).webkitRequestFullscreen) {
+                    vPlayer.get(0).webkitRequestFullscreen();
+                }
+                setTimeout(function() {
+                    $('#fullscreen').addClass("fa-rotate-180");
+                }, 300);
+            }
+        }
+        else {
+            if(requestFS) {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+                setTimeout(function() {
+                    $('#fullscreen').removeClass("fa-rotate-180");
+                }, 200);
+            }
+
+            $('#video-box').removeAttr("style");
+            vPlayer.removeClass("fullscreen");
+            if(typeof shortTitle!=="undefined") $('#video-title').text(shortTitle);
+        }
+        isFS = (document.fullscreenElement!=null || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+    }
+
+
+    $(document).ready(function() {
+        $('video').get(0).controls = false;
+        video = $('video').eq(0);
+        if($('#video-title').is(':empty')) {
+            title = video.attr("src").split("/");
+            title = title[title.length-1].replace(/(_|-)|(\.[^.\s]{3,4}$)/g, " ").replace(/([12347]\d{2,3}p|\s(Full\s?)?HD(?![^0-9\s\-]))/g, "");  //binde- und unterstriche ersetzen, dateiendung & qualität entf
+            title = titleCase(title);
+            if(title.length > 55) {
+                shortTitle = title.substr(0,54) + "...";
+                $('#video-title').text(shortTitle);  //titel bei über 59 zeichen kürzen
+            } else $('#video-title').text(title);
+        }
+        if($('#hd-source').length) video.data("sd-src", video.attr("src"));
+        else $('#hdtoggle').addClass("disabled").attr("title", "Not available");
+        isFS = (document.fullscreenElement!=null || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+
+        $('#hintergrund').load(function() {
+            $(this).fadeIn(600);
+        });
+
+
+        $('#playArea').multipleClicks(function() {
+            playVideo();
+        }, function() {
+            if(!isFS) showFullscreen(false);
+        }, 250);
+
+        $('#playArea').bind('mousemove', function(){
+            cursorShowTimeout(1500);
+        }).mousedown(function(e) {
+            $('#playArea').unbind("mousemove");
+        }).mouseup(function() {
+            setTimeout(function() {
+                $('#playArea').bind("mousemove", function() {
+                    cursorShowTimeout(1500);
+                });
+            }, 10);
+        }).mouseout(function(){ $('#playArea').css("cursor", ""); });
+
+        $(document).keyup(function(e) {
+            if(e.keyCode==32) { e.preventDefault(); playVideo(); }  //bei Leertaste abspielen/pausieren
+            if(e.which==27 && $('#video-player').hasClass("fullscreen")) {  //bei ESC Vollbild beenden
+                showFullscreen(false);
+                setTimeout(function() {
+                    $('#fullscreen').removeClass("fa-rotate-180");
+                }, 200);
+            }
+        });
+
+        $('#timeline').mousedown(function() {
+            clearInterval(timeline);
+        }).mouseup(function() {
+            var timePercentage = $('#timeline').val() /100;
+            video.get(0).currentTime = video.get(0).duration *timePercentage;
+            initTimeline();
+            //fix for current time
+            pos = video.get(0).currentTime;
+            var timeString = new Date(pos * 1000).toString('m:ss');
+            $('#currentT').html(timeString);
+        });
+
+        $('#volume').click(function() {  //Lautstärke einstellen, auch während dem Schieben des Reglers
+            setVolume();
+        }).mousedown(function() {
+            $(this).mousemove(function() {
+                setVolume();
+            });
+        }).mouseup(function() {
+            $(this).unbind("mousemove");
+        });
+
+        $('#hdtoggle').click(function() {
+            var hd = ($('#hd-source').length) ? $('#hd-source').val() : false;
+            if(hd) {
+                var position = video[0].currentTime;
+                var wasPlaying = !video[0].paused;
+                var sd = video.data("sd-src");
+                if(video.attr("src") != hd) {
+                    video.attr("src", hd);
+                    $(this).addClass("active");
+                } else {
+                    video.attr("src", sd);
+                    $(this).removeClass("active");
+                }
+                setTimeout(function() {
+                    video[0].currentTime = position;
+                    if(wasPlaying) setTimeout('playVideo();', 400);
+                }, 200);
+            }
+        });
+
+        /*$('#quality span').each(function() {
+         $(this).click(function() {
+         changeQuality( $(this).html() );
+         });
+         });*/
+    });
 </script>
 </head>
 <body>
@@ -302,26 +468,26 @@ $(document).ready(function() {
 <div id="content">
 	<div id="video-box">
 		<div id="video-player">
-			<div id="video-title">Big Buck Bunny - A Testvideo</div>
-			<div id="playArea" onclick="playVideo()">&nbsp;</div>
+			<div id="video-title"></div>
+			<div id="playArea">&nbsp;</div>
 			<div id="video-controls">
 				<i id="play" class="fa fa-play fa-fw" onclick="playVideo()"></i>
 				<span id="currentT">0:00</span>
-				<input id="timeline" type="range" value="0" step="0.1">
+				<input id="timeline" type="range" value="0.0" min="0.0" max="100.0" step="0.1">
 				<span id="duration">0:00</span>
 				<i id="volume-down" class="fa fa-volume-down" onclick="muteVideo()"></i>
-				<input id="volume" type="range" value="0.5" min="0" max="1" step="0.01" onclick="setVolume()" onchange="setVolume()">
+				<input id="volume" type="range" value="0.25" min="0" max="1" step="0.01">
 				<i class="fa fa-volume-up" onclick="setVolume(1)"></i>
 				<i id="fullscreen" class="fa fa-external-link" onclick="showFullscreen()"></i>&nbsp;
-				<i id="hdvideo" class="fa" onclick="toggleHD()">HD</i>
+				<i id="hdtoggle" class="fa">HD</i>
 			</div>
-			<video id="video" src="http://www.quirksmode.org/html5/videos/big_buck_bunny.webm" width="640" height="360" controls>
+            <input type="hidden" id="hd-source" value="Videoplayer/sintel_trailer-720p.mp4">
+			<video src="Videoplayer/sintel_trailer-480p.mp4" poster="http://media.w3.org/2010/05/sintel/poster.png" controls>
 				<p class="info">Ups! Dein Browser scheint kein HTML5 zu unterst&uuml;tzen.<br>Du solltest deinen Browser ein Update g&ouml;nnen ;)</p>
 				<p class="info">Jedoch kannst du dir auch jetzt schon das Video <a href="https://www.youtube.com/watch?v=XSGBVzeBUbk">&thinsp;auf
 					YouTube&thinsp;<i class="fa fa-youtube-play" style="text-shadow: none"></i>&thinsp;</a> anschauen&thinsp;...</p>
 			</video>
 		</div>
-		<!-- <p id="quality"><b>Full version</b> <span title="Standard">360p</span><span>720p</span></p> -->
 	</div>
 </div>
 </body>
