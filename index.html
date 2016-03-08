@@ -6,203 +6,12 @@
 <meta name="author" content="Dennis Jungbauer">
 <meta name="webdesigner" content="Dennis Jungbauer">
 <meta name="Editor" content="Notepad++">
-<link rel="shortcut icon" type="image/x-icon" href="../../img/video.ico">
+<link rel="shortcut icon" type="image/x-icon" href="assets/video.ico">
+<link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css">
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
-<style>
-	@import url(http://fonts.googleapis.com/css?family=Open+Sans);
-
-	body {
-		width: 100%;
-		height: 100%;
-		margin: 0;
-		padding: 0;
-		background: #242424;
-		background: -moz-linear-gradient(left, #0C0D0D 0%, #333 50%, #0C0D0D 100%);
-		background: -webkit-linear-gradient(left, #0C0D0D 0%, #333 50%, #0C0D0D 100%);
-		background: -ms-linear-gradient(left, #0C0D0D 0%, #333 50%, #0C0D0D 100%);
-		background: linear-gradient(to right, #0C0D0D 0%, #333 50%, #0C0D0D 100%);
-		-khtml-user-select: none;
-		-moz-user-select:none;
-		-webkit-user-select: none;
-		-ms-user-select: none;
-	}
-	#hintergrund {
-		display: none;
-		width: 100%;
-		height: auto;
-		position: fixed;
-		z-index: 1;
-		border: none;
-	}
-	#content {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		z-index: 2;
-	}
-	a { color: dodgerblue; text-decoration: none; }
-	a:hover { color: royalblue; }
-	div#video-box {
-		position: absolute;
-		left: 50%;
-		top: 50%;
-		margin-left: -320px;  /* hälfte vom div */
-		margin-top: -230px;  /* hälfte vom div (video + padding) und 34px weniger */
-		background: black;
-		border: 4px solid black;
-		border-width: 1em 4px;
-		box-shadow: 0px 1px 10px 2px #666;
-        overflow: hidden;
-	}
-	#video-player video {
-        display: block;  /* fix for this little padding on the parent div */
-        width: 640px;
-        height: 360px;
-		border-bottom: thin solid #111;
-		opacity: 0.88;
-		transition: opacity 160ms ease-in-out;
-	}
-	#video-player.fullscreen video {
-		position: fixed;
-		height: 100%;
-		width: 100%;
-		left: 0;
-		top: 0;
-		box-shadow: inset 0 -5px 45px 5px black;
-	}
-	#video-title {
-		position: absolute;
-		z-index: 2;
-		top: 0;
-		left: 0;
-		right: 0;
-		padding: 3px 8px;
-		background: rgba(18,18,18,0.77);
-		font-family: 'Open Sans', sans-serif;
-		color: #d0d0d0;
-		/*transition: opacity 0.2s;*/
-	}
-	.fullscreen #video-title {
-        position: fixed;
-        padding: 8px 10px;
-        text-align: center;
-    }
-	#playArea {
-		position: absolute;
-		z-index: 1;
-		width: 100%;
-		top: 0;
-		left: 0;
-		bottom: 0;
-	}
-	.fullscreen #playArea { position: fixed; }
-	#video-controls {
-		position: absolute;
-		z-index: 3;
-		height: 24px;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		padding: 7px 13px;
-		overflow: hidden;
-		background: rgba(12,12,12,0.88);
-		box-shadow: 0 -2px 8px -1px rgba(12,12,12,0.88);
-		cursor: default;
-	}
-	.fullscreen #video-controls { position: fixed; margin: auto; text-align: center; }
-    .fullscreen #playArea, .fullscreen #video-controls { bottom: 12px; }
-	#video-controls * { vertical-align: middle; }
-	#video-controls .fa {
-		font-size: 24px;
-		line-height: 24px;
-		color: #E0E0E0;
-		transition: all 180ms ease-out;
-	}
-    #video-controls .fa.disabled { color: rgb(76, 75, 80); }
-    #video-controls .fa:not(.disabled) { cursor: pointer; }
-	#video-controls .fa:not(.disabled):hover { color: white; text-shadow: 0 0 6px rgba(240,242,244,0.77); }
-	#video-controls span { font: 12px 'Open Sans'; color: #CCC; }
-	input[type="range"] {
-		-webkit-appearance: none;
-		appearance: none;
-		height: 7px;
-		margin: 4px;
-		background-color: #C3C2C5;
-		border-radius: 3px;
-		outline: none;
-	}
-	input[type="range"]::-webkit-slider-thumb {
-		-webkit-appearance: none;
-		appearance: none;
-		width: 14px;
-		height: 14px;
-		background-color: #EEE;
-		border-radius: 50%;
-		box-shadow: 0 0 4px 1px rgba(0,0,0,0.3);
-	}
-	
-	#video-controls #play { font-size: 22px; width: 19px; }
-	#currentT { margin-left: 6px; }
-	#timeline { margin: 8px 3px 8px 2px; width: 40%; }
-	#duration { margin-right: 12px; }
-	#video-controls #volume-down { width: 14px; }
-	input#volume { margin: 8px 4px; width: 21.5%; }
-	#video-controls #fullscreen { margin-left: 10px; height: 21px; font-size: 22px; }
-	#video-controls #hdtoggle {
-		font: italic 11px 'Arial Black' !important;
-		border: 2px solid #E0E0E0;
-		padding: 0 6px 0 5px;
-		border-radius: 4px;
-	}
-    #video-controls #hdtoggle.disabled { border-color: rgb(91, 90, 95); }
-	#video-controls #hdtoggle:not(.disabled):hover {
-		border-color: white;
-		box-shadow: 0 0 6px rgba(236,238,240,0.6), inset 0 0 5px rgba(238,240,242,0.7);
-	}
-	#video-controls #hdtoggle.active { color: deepskyblue; }
-	
-	p.info { font: 16px Georgia; color: #AAA; letter-spacing: 0.7px; line-height: 1.4em; padding: 4px 1em; text-shadow: 3px -3px 6px #999; }
-
-	@media (min-height: 500px) {
-		body { overflow-y: hidden; }
-	}
-</style>
-<script src="../../date.js"></script>
-<script>
-    // jQuery plugin to bind both single and double click to objects
-    // parameter 'delegateSelector' is optional and allow to delegate the events
-    // parameter 'dblclickWait' is optional, default is 300
-    (function($) {
-        $.fn.multipleClicks = function(delegateSelector, clickFun, dblclickFun, dblclickWait) {
-            var obj;
-            if (typeof(delegateSelector)==='function' && typeof(clickFun)==='function') {
-                dblclickWait = dblclickFun; dblclickFun = clickFun; clickFun = delegateSelector; delegateSelector = null; // If 'delegateSelector' is missing reorder arguments
-            } else if (!(typeof(delegateSelector)==='string' && typeof(clickFun)==='function' && typeof(dblclickFun)==='function')) {
-                return false;
-            }
-            return $(this).each(function() {
-                $(this).on('click', delegateSelector, function(event) {
-                    var self = this;
-                    clicks = ($(self).data('clicks') || 0)+1;
-                    $(self).data('clicks', clicks);
-                    if (clicks == 1) {
-                        setTimeout(function(){
-                            if ($(self).data('clicks') == 1) {
-                                clickFun.call(self, event); // Single click action
-                            } else {
-                                dblclickFun.call(self, event); // Double click action
-                            }
-                            $(self).data('clicks', 0);
-                        }, dblclickWait || 300);
-                    }
-                });
-            });
-        };
-    })(jQuery);
-</script>
+<script src="assets/date.js"></script>
+<script src="assets/jquery.multipleClicks.js"</script>
 <script>
     function titleCase(str) {
         return (str + '').replace(/^([a-z])|\s+([a-z])/g, function ($1) {
@@ -464,7 +273,7 @@
 </script>
 </head>
 <body>
-<img id="hintergrund" src="../../img/theater-ambient.jpg" alt="Hintergrundbild">
+<img id="hintergrund" src="assets/theater-ambient.jpg" alt="Hintergrundbild">
 <div id="content">
 	<div id="video-box">
 		<div id="video-player">
@@ -481,8 +290,8 @@
 				<i id="fullscreen" class="fa fa-external-link" onclick="showFullscreen()"></i>&nbsp;
 				<i id="hdtoggle" class="fa">HD</i>
 			</div>
-            <input type="hidden" id="hd-source" value="Videoplayer/sintel_trailer-720p.mp4">
-			<video src="Videoplayer/sintel_trailer-480p.mp4" poster="http://media.w3.org/2010/05/sintel/poster.png" controls>
+            <input type="hidden" id="hd-source" value="assets/sintel_trailer-720p.mp4">
+			<video src="assets/sintel_trailer-480p.mp4" poster="http://media.w3.org/2010/05/sintel/poster.png" controls>
 				<p class="info">Ups! Dein Browser scheint kein HTML5 zu unterst&uuml;tzen.<br>Du solltest deinen Browser ein Update g&ouml;nnen ;)</p>
 				<p class="info">Jedoch kannst du dir auch jetzt schon das Video <a href="https://www.youtube.com/watch?v=XSGBVzeBUbk">&thinsp;auf
 					YouTube&thinsp;<i class="fa fa-youtube-play" style="text-shadow: none"></i>&thinsp;</a> anschauen&thinsp;...</p>
