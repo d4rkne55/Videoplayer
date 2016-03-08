@@ -2,7 +2,7 @@
 <html>
 <head>
 <title>Mein Videoplayer | PrivateProjects</title>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="author" content="Dennis Jungbauer">
 <meta name="webdesigner" content="Dennis Jungbauer">
 <meta name="Editor" content="Notepad++">
@@ -10,12 +10,10 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css">
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
-<script src="assets/date.js"></script>
-<script src="assets/jquery.multipleClicks.js"</script>
 <script>
     function titleCase(str) {
-        return (str + '').replace(/^([a-z])|\s+([a-z])/g, function ($1) {
-            return $1.toUpperCase();
+        return (str + '').replace(/^([a-z])|\s+([a-z])/g, function ($char) {
+            return $char.toUpperCase();
         });
     }
     var cursorTimer;
@@ -30,17 +28,17 @@
         }
     }
     function hoverEffect() {
-        $('#video-player').hover(function() {
-            //$(video).css("opacity", "1");
-            var bottom = $('#video-player').hasClass("fullscreen") ? 12 : 0;
-            $('#video-controls').stop(true).animate({bottom: bottom}, 120);
-            //$('#video-title').fadeIn(100);
-        }, function() {
-            if (! video.get(0).ended) {
-                $('#video-controls').stop(true, true).delay(550).animate({bottom: -$('#video-controls').outerHeight() -5}, 750);
+        if (! video.get(0).ended) {
+            $('#video-player').hover(function() {
+                //$(video).css("opacity", "1");
+                var bottom = $('#video-player').hasClass("fullscreen") ? 12 : 0;
+                $('#video-controls').stop(true).animate({bottom: bottom}, 120);
+                //$('#video-title').fadeIn(100);
+            }, function() {
+                $('#video-controls').stop(true, true).delay(550).animate({bottom: -$('#video-controls').outerHeight() -5}, 750, "easeInCubic");
                 //$('#video-title').fadeOut(220);
-            }
-        });
+            });
+        }
     }
     function showTimes() {
         dur = video.get(0).duration;
@@ -52,6 +50,7 @@
             $('#currentT').html(timeString);
         }, 500);
     }
+    var timeline;
     function initTimeline() {
         timeline = setInterval(function() {
             pos = video.get(0).currentTime;
@@ -82,7 +81,7 @@
                 var url = prompt("The video is not reachable.\nTo load another video paste the URL here:", video.attr("src"));
                 if(url != null) {
                     video.attr("src", url);
-                    setTimeout('playVideo()', 500);
+                    setTimeout('playVideo();', 500);
                 }
                 return false;
             }
@@ -125,24 +124,26 @@
             $('#volume').val( video.get(0).volume );
         }
     }
+    var isFS;
     function showFullscreen(requestFS) {
         requestFS = (typeof requestFS !== "undefined") ? requestFS : true;
-        var vPlayer = $('#video-player');
+        var $vPlayer = $('#video-player');
+        var vPlayer = $vPlayer.get(0);
         $('#video-controls').removeAttr("style");
-        if(!vPlayer.hasClass("fullscreen") || (requestFS && !isFS)) {
-            vPlayer.addClass("fullscreen");
+        if(!$vPlayer.hasClass("fullscreen") || (requestFS && !isFS)) {
+            $vPlayer.addClass("fullscreen");
             $('#video-box').css("position", "initial");
             if(typeof title!=="undefined") $('#video-title').text(title);
 
             if(requestFS) {
-                if (vPlayer.get(0).requestFullscreen) {
-                    vPlayer.get(0).requestFullscreen();
-                } else if (vPlayer.get(0).msRequestFullscreen) {
-                    vPlayer.get(0).msRequestFullscreen();
-                } else if (vPlayer.get(0).mozRequestFullScreen) {
-                    vPlayer.get(0).mozRequestFullScreen();
-                } else if (vPlayer.get(0).webkitRequestFullscreen) {
-                    vPlayer.get(0).webkitRequestFullscreen();
+                if (vPlayer.requestFullscreen) {
+                    vPlayer.requestFullscreen();
+                } else if (vPlayer.msRequestFullscreen) {
+                    vPlayer.msRequestFullscreen();
+                } else if (vPlayer.mozRequestFullScreen) {
+                    vPlayer.mozRequestFullScreen();
+                } else if (vPlayer.webkitRequestFullscreen) {
+                    vPlayer.webkitRequestFullscreen();
                 }
                 setTimeout(function() {
                     $('#fullscreen').addClass("fa-rotate-180");
@@ -166,7 +167,7 @@
             }
 
             $('#video-box').removeAttr("style");
-            vPlayer.removeClass("fullscreen");
+            $vPlayer.removeClass("fullscreen");
             if(typeof shortTitle!=="undefined") $('#video-title').text(shortTitle);
         }
         isFS = (document.fullscreenElement!=null || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
@@ -187,7 +188,6 @@
         }
         if($('#hd-source').length) video.data("sd-src", video.attr("src"));
         else $('#hdtoggle').addClass("disabled").attr("title", "Not available");
-        isFS = (document.fullscreenElement!=null || document.mozFullScreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
 
         $('#hintergrund').load(function() {
             $(this).fadeIn(600);
@@ -224,14 +224,16 @@
 
         $('#timeline').mousedown(function() {
             clearInterval(timeline);
-        }).mouseup(function() {
-            var timePercentage = $('#timeline').val() /100;
-            video.get(0).currentTime = video.get(0).duration *timePercentage;
-            initTimeline();
-            //fix for current time
-            pos = video.get(0).currentTime;
-            var timeString = new Date(pos * 1000).toString('m:ss');
-            $('#currentT').html(timeString);
+        }).mouseup(function(e) {
+            if(e.button==0) {
+                var timePercentage = $('#timeline').val() /100;
+                video.get(0).currentTime = video.get(0).duration *timePercentage;
+                initTimeline();
+                //fix for current time
+                pos = video.get(0).currentTime;
+                var timeString = new Date(pos * 1000).toString('m:ss');
+                $('#currentT').html(timeString);
+            }
         });
 
         $('#volume').click(function() {  //Lautstärke einstellen, auch während dem Schieben des Reglers
@@ -263,12 +265,6 @@
                 }, 200);
             }
         });
-
-        /*$('#quality span').each(function() {
-         $(this).click(function() {
-         changeQuality( $(this).html() );
-         });
-         });*/
     });
 </script>
 </head>
@@ -278,7 +274,7 @@
 	<div id="video-box">
 		<div id="video-player">
 			<div id="video-title"></div>
-			<div id="playArea">&nbsp;</div>
+			<div id="playArea"></div>
 			<div id="video-controls">
 				<i id="play" class="fa fa-play fa-fw" onclick="playVideo()"></i>
 				<span id="currentT">0:00</span>
@@ -287,17 +283,20 @@
 				<i id="volume-down" class="fa fa-volume-down" onclick="muteVideo()"></i>
 				<input id="volume" type="range" value="0.25" min="0" max="1" step="0.01">
 				<i class="fa fa-volume-up" onclick="setVolume(1)"></i>
-				<i id="fullscreen" class="fa fa-external-link" onclick="showFullscreen()"></i>&nbsp;
+				<i id="fullscreen" class="fa fa-external-link" onclick="showFullscreen()"></i>
 				<i id="hdtoggle" class="fa">HD</i>
 			</div>
-            <input type="hidden" id="hd-source" value="assets/sintel_trailer-720p.mp4">
+            <input type="hidden" id="hd-source" value="assets/sintel_trailer-1080p.mp4">
 			<video src="assets/sintel_trailer-480p.mp4" poster="http://media.w3.org/2010/05/sintel/poster.png" controls>
-				<p class="info">Ups! Dein Browser scheint kein HTML5 zu unterst&uuml;tzen.<br>Du solltest deinen Browser ein Update g&ouml;nnen ;)</p>
-				<p class="info">Jedoch kannst du dir auch jetzt schon das Video <a href="https://www.youtube.com/watch?v=XSGBVzeBUbk">&thinsp;auf
-					YouTube&thinsp;<i class="fa fa-youtube-play" style="text-shadow: none"></i>&thinsp;</a> anschauen&thinsp;...</p>
+				<p class="info">Ups! Dein Browser scheint kein HTML5 zu unterstützen.<br>Du solltest deinem Browser ein Update gönnen ;)</p>
+				<p class="info">Jedoch kannst du dir auch jetzt schon das Video <a href="https://www.youtube.com/watch?v=HOfdboHvshg">&thinsp;auf
+				YouTube&thinsp;<i class="fa fa-youtube-play" style="text-shadow: none"></i>&thinsp;</a> anschauen&thinsp;...</p>
 			</video>
 		</div>
 	</div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/datejs/1.0/date.min.js"></script>
+<script src="assets/jquery.multipleClicks.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.3/jquery.easing.js"></script>
 </body>
 </html>
